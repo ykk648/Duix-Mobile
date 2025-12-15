@@ -113,6 +113,25 @@ extern "C" {
     return rst;
   }
 
+  // 直接初始化模型（无需解密）
+  JNIEXPORT jint JNICALL Java_ai_guiji_duix_DuixNcnn_initDirect(JNIEnv *env, jobject thiz,
+      jstring fnparam, jstring fnbin, jstring fnmask, jstring fnwenet,
+      jint width, jint height, jint kind){
+    if(!g_digit)return -1;
+    std::string sparam = getStringUTF(env,fnparam);
+    std::string sbin = getStringUTF(env,fnbin);
+    std::string smask = getStringUTF(env,fnmask);
+    std::string swenet = getStringUTF(env,fnwenet);
+    
+    // 初始化 Munet 模型
+    int rst = dhduix_initMunetex(g_digit,(char*)sparam.c_str(),(char*)sbin.c_str(),(char*)smask.c_str(),kind?kind:168);
+    if(rst != 0) return rst;
+    
+    // 初始化 Wenet 模型
+    rst = dhduix_initWenet(g_digit,(char*)swenet.c_str());
+    return rst;
+  }
+
   JNIEXPORT jlong JNICALL Java_ai_guiji_duix_DuixNcnn_newsession(JNIEnv *env, jobject thiz){
     if(!g_digit)return -1;
     uint64_t sessid = dhduix_newsession(g_digit);

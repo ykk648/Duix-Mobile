@@ -92,17 +92,23 @@ int Mobunet::domodelold(JMat* pic,JMat* msk,JMat* feat){
 int Mobunet::domodel(JMat* pic,JMat* msk,JMat* feat,int rect){
   int width = pic->width();
   int height = pic->height();
+  
+    // 输入预处理: [0, 255] -> [0, 1]
     ncnn::Mat inmask = ncnn::Mat::from_pixels(msk->udata(), m_rgb?ncnn::Mat::PIXEL_RGB:ncnn::Mat::PIXEL_BGR2RGB, rect, rect);
     inmask.substract_mean_normalize(mean_vals, norm_vals);
     ncnn::Mat inreal = ncnn::Mat::from_pixels(pic->udata(), m_rgb?ncnn::Mat::PIXEL_RGB:ncnn::Mat::PIXEL_BGR2RGB, rect, rect);
     inreal.substract_mean_normalize(mean_vals, norm_vals);
+    
     ncnn::Mat inpic(width,height,6);
     float* buf = (float*)inpic.data;
     float* pr = (float*)inreal.data;
-    memcpy(buf,pr,inreal.cstep*sizeof(float)*inreal.c);
-    buf+= inpic.cstep*inreal.c;
     float* pm = (float*)inmask.data;
-    memcpy(buf,pm,inmask.cstep*sizeof(float)*inmask.c);
+    
+    // 通道顺序: [mask, real] (与用户 PyTorch 模型一致)
+    memcpy(buf, pm, inmask.cstep * sizeof(float) * inmask.c);
+    buf += inpic.cstep * inmask.c;
+    memcpy(buf, pr, inreal.cstep * sizeof(float) * inreal.c);
+    
     float* pf = (float*)feat->data();
     if(m_wenetstep==10){
       pf+= 256*5;
@@ -114,9 +120,12 @@ int Mobunet::domodel(JMat* pic,JMat* msk,JMat* feat,int rect){
     ex.input("audio", inwenet);
     //printf("===debug ncnn\n");
     ex.extract("output", outpic);
-    float outmean_vals[3] = {-1.0f, -1.0f, -1.0f};
-    float outnorm_vals[3] = { 127.5f,  127.5f,  127.5f};
+    
+    // Sigmoid 输出后处理: [0, 1] -> [0, 255]
+    float outmean_vals[3] = {0.0f, 0.0f, 0.0f};
+    float outnorm_vals[3] = {255.0f, 255.0f, 255.0f};
     outpic.substract_mean_normalize(outmean_vals, outnorm_vals);
+    
     cv::Mat cvout(width,height,CV_8UC3);
     outpic.to_pixels(cvout.data,m_rgb?ncnn::Mat::PIXEL_RGB:ncnn::Mat::PIXEL_RGB2BGR);
 

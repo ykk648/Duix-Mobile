@@ -2,6 +2,45 @@ English | [简体中文](/README_zh.md)
 
 # 🚀🚀🚀 Duix Mobile — The Best Real-time Interactive AI Avatar Solution for Mobile Devices
 
+## 🔧 Fork Modifications (Custom Model Support)
+
+This fork adds support for loading **custom unencrypted NCNN models** while keeping the original config/bbox/weight files decrypted through `resource_loader.jar`.
+
+### Key Changes
+
+| File | Modification |
+|------|--------------|
+| `munet.h/cpp` | Input normalization: `[0,255]→[0,1]`, channel order: `[mask, real]`, output: Sigmoid `[0,1]→[0,255]` |
+| `DUIX.java` | Added `setCustomModelPath(paramPath, binPath)` method |
+| `RenderThread.java` | Added custom model path support |
+| `DuixNcnn.java` | Added `initDirect()` native method |
+| `DuixJni.cpp` | Added JNI implementation for `initDirect()` |
+
+### Usage
+
+```java
+// Create DUIX instance
+DUIX duix = new DUIX(context, "Kai", renderSink, callback);
+
+// Set custom NCNN model paths (call BEFORE init())
+duix.setCustomModelPath(
+    "/path/to/your/model.param",  // Your trained NCNN param file
+    "/path/to/your/model.bin"     // Your trained NCNN bin file
+);
+
+// Initialize (config.j, bbox.j, weight_168u.bin still decrypted via resource_loader.jar)
+duix.init();
+```
+
+### Model Requirements
+
+- Input normalization: `[0, 255] → [0, 1]` (ToTensor style)
+- Input channel order: `[mask, real]` (6 channels)
+- Output activation: **Sigmoid** `[0, 1]`
+- Audio input: `256×20×1` (WeNet BNF features)
+
+---
+
 🔗 **Official website**：[www.duix.com](http://www.duix.com)
 
 **📱 Cross-platform support: iOS / Android / Tablet / Automotive / VR / IoT / Large Screen Interaction, etc.**

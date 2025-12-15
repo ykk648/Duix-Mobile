@@ -24,6 +24,10 @@ public class DUIX {
     private boolean isReady;            // 准备完成的标记
     private float mVolume = 1.0F;
     private RenderThread.Reporter reporter;
+    
+    // 自定义 NCNN 模型路径（用于加载未加密的模型）
+    private String customParamPath = null;
+    private String customBinPath = null;
 
     public DUIX(Context context, String modelName, RenderSink sink, Callback callback) {
         this.mContext = context;
@@ -121,6 +125,12 @@ public class DUIX {
                 }
             }
         }, reporter);
+        
+        // 如果设置了自定义模型路径，传递给 RenderThread
+        if (customParamPath != null && customBinPath != null) {
+            mRenderThread.setCustomModelPath(customParamPath, customBinPath);
+        }
+        
         mRenderThread.setName("DUIXRender-Thread");
         mRenderThread.start();
     }
@@ -227,5 +237,20 @@ public class DUIX {
         if (mRenderThread != null) {
             mRenderThread.setReporter(reporter);
         }
+    }
+
+    /**
+     * 设置自定义 NCNN 模型路径（用于加载未加密的模型）
+     * 必须在 init() 之前调用
+     * 
+     * config.j、bbox.j、weight_168u.bin 等配置文件仍使用原有的解密流程
+     * 只有 NCNN 模型文件 (.param, .bin) 使用自定义路径
+     * 
+     * @param paramPath NCNN .param 文件的绝对路径
+     * @param binPath   NCNN .bin 文件的绝对路径
+     */
+    public void setCustomModelPath(String paramPath, String binPath) {
+        this.customParamPath = paramPath;
+        this.customBinPath = binPath;
     }
 }

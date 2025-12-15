@@ -13,8 +13,9 @@ class Mobunet{
       int m_wenetstep = 20;
       int m_rgb =0;
         ncnn::Net unet;
-        float mean_vals[3] = {127.5f, 127.5f, 127.5f};
-        float norm_vals[3] = {1 / 127.5f, 1 / 127.5f, 1 / 127.5f};
+        // 输入归一化: [0, 255] -> [0, 1] (ToTensor 风格)
+        float mean_vals[3] = {0.0f, 0.0f, 0.0f};
+        float norm_vals[3] = {1.0f / 255.0f, 1.0f / 255.0f, 1.0f / 255.0f};
         JMat*   mat_weights = nullptr;
         JMat*   mat_weightmin = nullptr;
         int initModel(const char* binfn,const char* paramfn,const char* mskfn);

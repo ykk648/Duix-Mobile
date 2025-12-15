@@ -63,6 +63,10 @@ public class RenderThread extends Thread {
     private ByteBuffer rawBuffer;
     private ByteBuffer maskBuffer;
     private final File modelDir;
+    
+    // 自定义模型路径（如果设置了，将使用这些路径而不是 ModelInfoLoader 返回的路径）
+    private String customParamPath = null;
+    private String customBinPath = null;
 
     private AudioPlayer audioPlayer;
     private long mCurrentBnfSession = -1;
@@ -86,6 +90,18 @@ public class RenderThread extends Thread {
 
     public void setReporter(Reporter reporter){
         this.mReporter = reporter;
+    }
+
+    /**
+     * 设置自定义 NCNN 模型路径（用于加载未加密的模型）
+     * 必须在 start() 之前调用
+     * 
+     * @param paramPath NCNN .param 文件路径
+     * @param binPath   NCNN .bin 文件路径
+     */
+    public void setCustomModelPath(String paramPath, String binPath) {
+        this.customParamPath = paramPath;
+        this.customBinPath = binPath;
     }
 
     @Override
@@ -119,10 +135,15 @@ public class RenderThread extends Thread {
             try {
                 scrfdncnn.alloc(0, 20, info.getWidth(), info.getHeight());
                 scrfdncnn.initPcmex(0,10,20,50,0);
+                
+                // 使用自定义模型路径（如果设置了），否则使用 ModelInfoLoader 返回的路径
+                String paramPath = (customParamPath != null) ? customParamPath : info.getUnetparam();
+                String binPath = (customBinPath != null) ? customBinPath : info.getUnetbin();
+                
                 if (info.getModelkind() > 0){
-                    scrfdncnn.initMunetex(info.getUnetparam(), info.getUnetbin(), info .getUnetmsk(), info.getModelkind());
+                    scrfdncnn.initMunetex(paramPath, binPath, info.getUnetmsk(), info.getModelkind());
                 } else {
-                    scrfdncnn.initMunet(info.getUnetparam(), info.getUnetbin(), info.getUnetmsk());
+                    scrfdncnn.initMunet(paramPath, binPath, info.getUnetmsk());
                 }
                 scrfdncnn.initWenet(info.getWenetfn());
                 mModelInfo = info;
